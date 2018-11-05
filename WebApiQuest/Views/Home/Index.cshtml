@@ -1,0 +1,179 @@
+﻿<div id="tableBlock"></div>
+<div class="window">
+    <div id="editBlock">
+        <p><b>Edit purchase</b></p>
+        <table class="custom">
+            <tr><td><label>PurchaseId: </label></td><td><input type="text" id="editPurchaseId" /></td></tr>
+            <tr><td><label>ProductId: </label></td><td><input type="text" id="editProductId" /></td></tr>
+            <tr><td><label>SizeTableId: </label></td><td><input type="text" id="editSizeTableId" /></td></tr>
+            <tr><td><label>Name: </label></td><td><input type="text" id="editName" /></td></tr>
+        </table>
+        <button id="editPurchase">Сохранить</button>
+    </div>
+</div>
+<div class="window">
+    <div id="createBlock">
+        <p><b>Add purchase</b></p>
+        <table class="custom">
+            <tr><td><label>ProductId: </label></td><td><input type="text" id="addProductId" /></td></tr>
+            <tr><td><label>SizeTableId: </label></td><td><input type="text" id="addSizeTableId" /></td></tr>
+            <tr><td><label>Name: </label></td><td><input type="text" id="addtName" /></td></tr>
+        </table>
+        <button id="addPurchase">Сохранить</button>
+    </div>
+</div>
+@section scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            GetAllPurchases();
+
+            $("#editPurchase").click(function (event) {
+                event.preventDefault();
+                EditPurchase();
+            });
+
+            $("#addPurchase").click(function (event) {
+                event.preventDefault();
+                AddPurchase();
+            });
+
+        });
+        // Получение всех по ajax-запросу
+        function GetAllPurchases() {
+
+            $("#createBlock").css('display', 'block');
+            $("#editBlock").css('display', 'none');
+            $.ajax({
+                url: '/api/values',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    WriteResponse(data);
+                },
+                error: function (x, y, z) {
+                    alert(x + '\n' + y + '\n' + z);
+                }
+            });
+        }
+        // Добавление новой
+        function AddPurchase() {
+            // получаем значения
+            var purchase = {
+                ProductId: $('#addProductId').val(),
+                SizeTableId: $('#addSizeTableId').val(),
+                Name: $('#addtName').val(),
+            };
+
+            $.ajax({
+                url: '/api/values/',
+                type: 'POST',
+                data: JSON.stringify(purchase),
+                contentType: "application/json;charset=utf-8",
+                success: function (data) {
+                    GetAllPurchases();
+                },
+                error: function (x, y, z) {
+                    alert(x + '\n' + y + '\n' + z);
+                }
+            });
+        }
+        // Удаление
+        function DeletePurchase(id) {
+
+            $.ajax({
+                url: '/api/values/' + id,
+                type: 'DELETE',
+                contentType: "application/json;charset=utf-8",
+                success: function (data) {
+                    GetAllPurchases();
+                },
+                error: function (x, y, z) {
+                    alert(x + '\n' + y + '\n' + z);
+                }
+            });
+        }
+        // редактировани
+        function EditPurchase() {
+            var id = $('#editPurchaseId').val()
+            // получаем новые значения
+            var purchase = {
+                PurchaseId: $('#editPurchaseId').val(),
+                ProductId: $('#editProductId').val(),
+                SizeTableId: $('#editSizeTableId').val(),
+                Name: $('#editName').val(),
+            };
+            $.ajax({
+                url: '/api/values/' + id,
+                type: 'PUT',
+                data: JSON.stringify(purchase),
+                contentType: "application/json;charset=utf-8",
+                success: function (data) {
+                    GetAllPurchases();
+                },
+                error: function (x, y, z) {
+                    alert(x + '\n' + y + '\n' + z);
+                }
+            });
+        }
+        // вывод полученных данных на экран
+        function WriteResponse(purchase) {
+            var strResult = "<table class=\"items\"><th>Purchase ID</th><th>ProductId</th><th>SizeTableId</th><th>Name</th><th>LastDateOrder</th>";
+            $.each(purchase, function (index, purchase) {
+                strResult += "<tr><td>" + purchase.PurchaseId + "</td>" +
+                    "<td> " + purchase.ProductId + "</td>" +
+                    "<td>" + purchase.SizeTableId + "</td>" +
+                    "<td>" + purchase.Name + "</td>" +
+                    "<td> " + purchase.LastDateOrder + "</td>" +
+                    "<td><a id='editItem' data-item='" + purchase.PurchaseId + "' onclick='EditItem(this);'>Редактировать</a></td>" +
+                    "<td><a id='delItem' data-item='" + purchase.PurchaseId + "' onclick='DeleteItem(this);'>Удалить</a></td></tr>";
+            });
+            strResult += "</table>";
+            $("#tableBlock").html(strResult);
+            $("table.items th").css("padding-right", 10 + "px");
+            $("table.items td").css("padding-right", 10 + "px");
+
+        }
+        // обработчик удаления
+        function DeleteItem(el) {
+            // получаем id удаляемого объекта
+            var id = $(el).attr('data-item');
+            DeletePurchase(id);
+        }
+        // обработчик редактирования
+        function EditItem(el) {
+            // получаем id редактируемого объекта
+            var id = $(el).attr('data-item');
+            GetPurchase(id);
+        }
+        // вывод данных  поля для редактирования
+        function ShowPurchase(purchase) {
+            if (purchase != null) {
+                $("#createBlock").css('display', 'none');
+                $("#editBlock").css('display', 'block');
+                $("#editPurchaseId").val(purchase.PurchaseId);
+                $("#editProductId").val(purchase.ProductId);
+                $("#editSizeTableId").val(purchase.SizeTableId);
+                $("#editName").val(purchase.Name);
+            }
+            else {
+                alert("This order does not exist.");
+            }
+        }
+        // запрос на редактирование
+        function GetPurchase(id) {
+            $.ajax({
+                url: '/api/values/' + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    ShowPurchase(data);
+                },
+                error: function (x, y, z) {
+                    alert(x + '\n' + y + '\n' + z);
+                }
+            });
+        }
+    </script>
+}
